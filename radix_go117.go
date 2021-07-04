@@ -101,17 +101,22 @@ func (n *node) delEdge(label byte) {
 // Tree implements a radix tree. This can be treated as a
 // Dictionary abstract data type. The main advantage over
 // a standard hash map is prefix-based lookups and
-// ordered iteration,
+// ordered iteration.
+// Can be used without calling New()
 type Tree struct {
 	root node
 	size int
 
-	fold bool
+	// if CaseInsensitive is set to true, all tree operations
+	// will use Unicode case-folding, which is a more general
+	// form of case-insensitivity.
+	CaseInsensitive bool
 
 	zero interface{}
 }
 
-// New returns an empty Tree
+// New returns an empty Tree.
+// The same as just using `var t Tree`.
 func New() *Tree {
 	var t Tree
 	return &t
@@ -127,13 +132,14 @@ func NewFromMap(m map[string]interface{}) *Tree {
 	return &t
 }
 
-// Len is used to return the number of elements in the tree
+// Len is used to return the number of elements in the tree.
 func (t *Tree) Len() int {
 	return t.size
 }
 
 // Insert is used to add a newentry or update
 // an existing entry. Returns if updated.
+// *Not* safe for concurrent calls.
 func (t *Tree) Insert(s string, v interface{}) (interface{}, bool) {
 	var parent *node
 	n := &t.root
@@ -224,7 +230,8 @@ func (t *Tree) Insert(s string, v interface{}) (interface{}, bool) {
 }
 
 // Delete is used to delete a key, returning the previous
-// value and if it was deleted
+// value and if it was deleted.
+// *Not* safe for concurrent calls.
 func (t *Tree) Delete(s string) (interface{}, bool) {
 	var (
 		parent *node
@@ -285,8 +292,9 @@ DELETE:
 }
 
 // DeletePrefix is used to delete the subtree under a prefix
-// Returns how many nodes were deleted
-// Use this to delete large subtrees efficiently
+// Returns how many nodes were deleted.
+// Use this to delete large subtrees efficiently.
+// *Not* safe for concurrent calls.
 func (t *Tree) DeletePrefix(s string) int {
 	return t.deletePrefix(nil, &t.root, s)
 }
@@ -341,7 +349,8 @@ func (n *node) mergeChild() {
 }
 
 // Get is used to lookup a specific key, returning
-// the value and if it was found
+// the value and if it was found.
+// Safe for concurrent calls.
 func (t *Tree) Get(s string) (interface{}, bool) {
 	n := &t.root
 	hp := t.hasPrefixFn()
@@ -373,6 +382,7 @@ func (t *Tree) Get(s string) (interface{}, bool) {
 
 // LongestPrefix is like Get, but instead of an
 // exact match, it will return the longest prefix match.
+// Safe for concurrent calls.
 func (t *Tree) LongestPrefix(s string) (string, interface{}, bool) {
 	var (
 		last   *leafNode
@@ -410,7 +420,8 @@ func (t *Tree) LongestPrefix(s string) (string, interface{}, bool) {
 	return "", t.zero, false
 }
 
-// Minimum is used to return the minimum value in the tree
+// Minimum is used to return the minimum value in the tree.
+// Safe for concurrent calls.
 func (t *Tree) Minimum() (string, interface{}, bool) {
 	n := &t.root
 	for {
@@ -426,7 +437,8 @@ func (t *Tree) Minimum() (string, interface{}, bool) {
 	return "", t.zero, false
 }
 
-// Maximum is used to return the maximum value in the tree
+// Maximum is used to return the maximum value in the tree.
+// Safe for concurrent calls.
 func (t *Tree) Maximum() (string, interface{}, bool) {
 	n := &t.root
 	for {
@@ -442,12 +454,14 @@ func (t *Tree) Maximum() (string, interface{}, bool) {
 	return "", t.zero, false
 }
 
-// Walk is used to walk the tree
+// Walk is used to walk the tree.
+// Safe for concurrent calls.
 func (t *Tree) Walk(fn WalkFn) {
 	recursiveWalk(&t.root, fn)
 }
 
-// WalkPrefix is used to walk the tree under a prefix
+// WalkPrefix is used to walk the tree under a prefix.
+// Safe for concurrent calls.
 func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
 	n := &t.root
 	hp := t.hasPrefixFn()
@@ -478,7 +492,8 @@ func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
 	}
 }
 
-// WalkNearestPath is like WalkPath but will start at the longest common prefix
+// WalkNearestPath is like WalkPath but will start at the longest common prefix.
+// Safe for concurrent calls.
 func (t *Tree) WalkNearestPath(path string, fn WalkFn) {
 	var (
 		last   *node
@@ -520,6 +535,7 @@ func (t *Tree) WalkNearestPath(path string, fn WalkFn) {
 // from the root down to a given leaf. Where WalkPrefix walks
 // all the entries *under* the given prefix, this walks the
 // entries *above* the given prefix.
+// Safe for concurrent calls.
 func (t *Tree) WalkPath(path string, fn WalkFn) {
 	n := &t.root
 	hp := t.hasPrefixFn()
@@ -550,7 +566,8 @@ func (t *Tree) WalkPath(path string, fn WalkFn) {
 	}
 }
 
-// ToMap is used to walk the tree and convert it into a map
+// ToMap is used to walk the tree and convert it into a map.
+// Safe for concurrent calls.
 func (t *Tree) ToMap() map[string]interface{} {
 	out := make(map[string]interface{}, t.size)
 	t.Walk(func(k string, v interface{}) bool {
@@ -561,7 +578,7 @@ func (t *Tree) ToMap() map[string]interface{} {
 }
 
 func (t *Tree) hasPrefixFn() func(s, pre string) bool {
-	if !t.fold {
+	if !t.CaseInsensitive {
 		return strings.HasPrefix
 	}
 
@@ -569,7 +586,7 @@ func (t *Tree) hasPrefixFn() func(s, pre string) bool {
 }
 
 func (t *Tree) longestPrefixFn() func(a, b string) int {
-	if !t.fold {
+	if !t.CaseInsensitive {
 		return longestPrefix
 	}
 
@@ -603,10 +620,11 @@ func longestPrefix(k1, k2 string) (i int) {
 
 	for i = 0; i < max; i++ {
 		if k1[i] != k2[i] {
-			break
+			return
 		}
 	}
-	return i
+
+	return
 }
 
 // longestPrefixFold finds the length of the shared prefix
@@ -616,22 +634,19 @@ func longestPrefixFold(k1, k2 string) (i int) {
 		k1, k2 = k2, k1
 	}
 
-	var (
-		r, pr rune
-		sz    int
-	)
+	var r1, r2 rune
 
-	for i, r = range k1 {
-		if r < utf8.RuneSelf {
-			if asciiLower(byte(r)) != asciiLower(k2[i]) {
-				return i
+	for i, r1 = range k1 {
+		if r1 < utf8.RuneSelf {
+			if !asciiEq(byte(r1), k2[0]) {
+				return
 			}
+			k2 = k2[1:]
 			continue
 		}
-		pr, sz = utf8.DecodeRuneInString(k2)
-		k2 = k2[sz:]
-		if unicode.ToLower(r) != unicode.ToLower(pr) {
-			return i
+
+		if r2, k2 = nextRune(k2); !runeEq(r1, r2) {
+			return
 		}
 	}
 
@@ -643,26 +658,45 @@ func hasPrefixFold(s, pre string) bool {
 		return false
 	}
 
-	var (
-		pr rune
-		sz int
-	)
+	var pr rune
 
-	for i, r := range pre {
+	for _, r := range pre {
 		if r < utf8.RuneSelf {
-			if asciiLower(byte(r)) != asciiLower(s[i]) {
+			if !asciiEq(byte(r), s[0]) {
 				return false
 			}
+			s = s[1:]
 			continue
 		}
 
-		pr, sz = utf8.DecodeRuneInString(s)
-		s = s[sz:]
-		if unicode.ToLower(r) != unicode.ToLower(pr) {
+		if pr, s = nextRune(s); !runeEq(r, pr) {
 			return false
 		}
 	}
 	return true
+}
+
+// nextRune is a hack to use a range loop for the next rune
+// it is faster than utf8.DecodeRuneInString
+func nextRune(s string) (rune, string) {
+	for _, r := range s {
+		return r, s[utf8.RuneLen(r):]
+	}
+	return 0, s
+}
+
+func runeEq(sr, tr rune) bool {
+	if sr == tr {
+		return true
+	}
+	return unicode.ToLower(sr) == unicode.ToLower(tr)
+}
+
+func asciiEq(sr, tr byte) bool {
+	if sr == tr {
+		return true
+	}
+	return asciiLower(sr) == asciiLower(tr)
 }
 
 func asciiLower(r byte) byte {

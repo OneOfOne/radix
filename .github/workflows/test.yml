@@ -1,4 +1,4 @@
-on: [push, release, pull_request]
+on: [push, pull_request]
 name: testing
 jobs:
   test:
@@ -26,7 +26,8 @@ jobs:
         go install golang.org/dl/gotip@master
         gotip download dev.typeparams
         gotip env -w GOEXPERIMENT=unified
-        sed -e 's@1.14@1.18@g' -i go.mod
+        gotip version
+        sed -e 's@1.1.@1.18@g' -i go.mod
 
     - name: Run Tests
       shell: bash -l {0}

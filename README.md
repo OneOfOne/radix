@@ -1,4 +1,6 @@
-radix [![Go Reference](https://pkg.go.dev/badge/go.oneofone.dev/radix.svg)](https://pkg.go.dev/go.oneofone.dev/radix)
+radix
+[![Go Reference](https://pkg.go.dev/badge/go.oneofone.dev/radix.svg)](https://pkg.go.dev/go.oneofone.dev/radix)
+[![Coverall](https://coveralls.io/repos/github/OneOfOne/radix/badge.svg?branch=main)](https://coveralls.io/github/OneOfOne/radix)
 =========
 
 `radix` implements a [radix tree](http://en.wikipedia.org/wiki/Radix_tree).

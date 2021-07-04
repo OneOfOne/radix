@@ -375,7 +375,7 @@ func TestRouter(t *testing.T) {
 	})
 	for i := 0; i < 255; i++ {
 		if unicode.IsPrint(rune(i)) {
-			t.Logf("%d = %c", i, byte(i))
+			t.Logf("%d = %c %v", i, rune(i), []byte("ò"))
 		}
 	}
 }

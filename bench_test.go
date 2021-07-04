@@ -11,8 +11,8 @@ import (
 var sink int
 
 func BenchmarkHasPrefix(b *testing.B) {
-	k1 := "/api/v1/user/:id"
-	k2 := "/api/v1/useR/1"
+	k1 := "/api/v1/user/çç"
+	k2 := "/api/v1/useR/x"
 	b.Log(k1[:longestPrefix(k1, k2)])
 	b.Run("fold", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
