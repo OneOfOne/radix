@@ -1,0 +1,51 @@
+on: [push, release, pull_request]
+name: testing
+jobs:
+  test:
+    strategy:
+      matrix:
+        go: [1.16.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+    - name: Install Go Deps
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        lfs: true
+
+    - name: Install dev.typeparams
+      shell: bash -l {0}
+      run: go install golang.org/dl/gotip@master
+      run: gotip download dev.typeparams
+
+    - name: Run Tests
+      shell: bash -l {0}
+      run: sed -e 's@1.14@1.18@g' -i go.mod
+      run: gotip test -covermode=atomic -coverprofile=profile.cov ./...
+
+    - name: Coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: profile.cov
+        flag-name: Go-${{ matrix.go }}
+        parallel: true
+  finish:
+      needs: test
+      runs-on: ubuntu-latest
+      steps:
+        - uses: shogo82148/actions-goveralls@v1
+          with:
+            parallel-finished: true
+        - name: Poke proxy.golang.org
+          shell: bash -l {0}
+          run: |
+            cd $(mktemp -d)
+            go mod init tmp
+            env GOPROXY=https://proxy.golang.org GO111MODULE=on go get go.oneofone.dev/radix@main
