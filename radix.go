@@ -637,68 +637,60 @@ func longestPrefixFold(k1, k2 string) (i int) {
 	}
 
 	var r1, r2 rune
+	var sz int
 
-	for i, r1 = range k1 {
-		if r1 < utf8.RuneSelf {
-			if !asciiEq(byte(r1), k2[0]) {
+	for i < len(k1) {
+		if k1[i] < utf8.RuneSelf {
+			if !asciiEq(k1[i], k2[i]) {
 				return
 			}
-			k2 = k2[1:]
+			i++
 			continue
 		}
 
-		if r2, k2 = nextRune(k2); !runeEq(r1, r2) {
+		r1, sz = utf8.DecodeLastRuneInString(k1[i:])
+		if r2, _ = utf8.DecodeRuneInString(k2[i:]); !runeEq(r1, r2) {
 			return
 		}
+		i += sz
 	}
 
 	return i + 1
 }
 
-func hasPrefixFold(s, pre string) bool {
+func hasPrefixFold(s, pre string) (_ bool) {
 	if len(s) < len(pre) {
-		return false
+		return
 	}
 
-	var pr rune
+	var pr, sr rune
+	var i, sz int
 
-	for _, r := range pre {
-		if r < utf8.RuneSelf {
-			if !asciiEq(byte(r), s[0]) {
-				return false
+	for i < len(pre) {
+		if pre[i] < utf8.RuneSelf {
+			if !asciiEq(pre[i], s[i]) {
+				return
 			}
-			s = s[1:]
+			i++
 			continue
 		}
 
-		if pr, s = nextRune(s); !runeEq(r, pr) {
-			return false
+		pr, sz = utf8.DecodeLastRuneInString(pre[i:])
+		if sr, _ = utf8.DecodeRuneInString(s[i:]); !runeEq(pr, sr) {
+			return
 		}
+		i += sz
 	}
+
 	return true
 }
 
-// nextRune is a hack to use a range loop for the next rune
-// it is faster than utf8.DecodeRuneInString
-func nextRune(s string) (rune, string) {
-	for _, r := range s {
-		return r, s[utf8.RuneLen(r):]
-	}
-	return 0, s
-}
-
 func runeEq(sr, tr rune) bool {
-	if sr == tr {
-		return true
-	}
-	return unicode.ToLower(sr) == unicode.ToLower(tr)
+	return sr == tr || unicode.ToLower(sr) == unicode.ToLower(tr)
 }
 
 func asciiEq(sr, tr byte) bool {
-	if sr == tr {
-		return true
-	}
-	return asciiLower(sr) == asciiLower(tr)
+	return sr == tr || asciiLower(sr) == asciiLower(tr)
 }
 
 func asciiLower(r byte) byte {
