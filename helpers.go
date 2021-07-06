@@ -1,9 +1,34 @@
 package radix
 
 import (
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
+
+func firstChar(s string) rune {
+	if s[0] < utf8.RuneSelf {
+		return rune(s[0])
+	}
+	r, _ := utf8.DecodeRuneInString(s)
+	return r
+}
+
+func hasPrefixFn(fold bool) func(s, pre string) bool {
+	if !fold {
+		return strings.HasPrefix
+	}
+
+	return hasPrefixFold
+}
+
+func longestPrefixFn(fold bool) func(a, b string) int {
+	if !fold {
+		return longestPrefix
+	}
+
+	return longestPrefixFold
+}
 
 // longestPrefix finds the length of the shared prefix
 // of two strings
