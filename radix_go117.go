@@ -5,7 +5,6 @@ package radix
 
 import (
 	"sort"
-	"strings"
 )
 
 // WalkFn is used when walking the tree. Takes a
@@ -147,7 +146,7 @@ func (t *Tree) Len() int {
 func (t *Tree) Insert(s string, v interface{}) (interface{}, bool) {
 	var parent *node
 	n := &t.root
-	lcp := t.longestPrefixFn()
+	lcp := longestPrefixFn(t.CaseInsensitive)
 	search := s
 	for {
 		// Handle key exhaution
@@ -242,7 +241,7 @@ func (t *Tree) Delete(s string) (interface{}, bool) {
 		label  byte
 		n      = &t.root
 		search = s
-		hp     = t.hasPrefixFn()
+		hp     = hasPrefixFn(t.CaseInsensitive)
 	)
 
 	for {
@@ -306,7 +305,7 @@ func (t *Tree) DeletePrefix(s string) int {
 // delete does a recursive deletion
 func (t *Tree) deletePrefix(parent, n *node, prefix string) int {
 	// Check for key exhaustion
-	hp := t.hasPrefixFn()
+	hp := hasPrefixFn(t.CaseInsensitive)
 	if len(prefix) == 0 {
 		// Remove the leaf node
 		subTreeSize := 0
@@ -319,6 +318,11 @@ func (t *Tree) deletePrefix(parent, n *node, prefix string) int {
 			n.leaf = nil
 		}
 		n.edges = nil // deletes the entire subtree
+
+		if parent != nil {
+			// delete dangling edge
+			parent.delEdge(n.prefix[0])
+		}
 
 		// Check if we should merge the parent's other child
 		if parent != nil && parent != &t.root && len(parent.edges) == 1 && !parent.isLeaf() {
@@ -357,7 +361,7 @@ func (n *node) mergeChild() {
 // Safe for concurrent calls.
 func (t *Tree) Get(s string) (interface{}, bool) {
 	n := &t.root
-	hp := t.hasPrefixFn()
+	hp := hasPrefixFn(t.CaseInsensitive)
 	search := s
 	for {
 		// Check for key exhaution
@@ -392,7 +396,7 @@ func (t *Tree) LongestPrefix(s string) (string, interface{}, bool) {
 		last   *leafNode
 		n      = &t.root
 		search = s
-		hp     = t.hasPrefixFn()
+		hp     = hasPrefixFn(t.CaseInsensitive)
 	)
 	for {
 		// Look for a leaf node
@@ -468,7 +472,7 @@ func (t *Tree) Walk(fn WalkFn) {
 // Safe for concurrent calls.
 func (t *Tree) WalkPrefix(prefix string, fn WalkFn) {
 	n := &t.root
-	hp := t.hasPrefixFn()
+	hp := hasPrefixFn(t.CaseInsensitive)
 	search := prefix
 	for {
 		// Check for key exhaution
@@ -503,7 +507,7 @@ func (t *Tree) WalkNearestPath(path string, fn WalkFn) {
 		last   *node
 		n      = &t.root
 		search = path
-		hp     = t.hasPrefixFn()
+		hp     = hasPrefixFn(t.CaseInsensitive)
 	)
 	for {
 		// Look for a leaf node
@@ -542,7 +546,7 @@ func (t *Tree) WalkNearestPath(path string, fn WalkFn) {
 // Safe for concurrent calls.
 func (t *Tree) WalkPath(path string, fn WalkFn) {
 	n := &t.root
-	hp := t.hasPrefixFn()
+	hp := hasPrefixFn(t.CaseInsensitive)
 	search := path
 	for {
 		// Visit the leaf values if any
@@ -579,22 +583,6 @@ func (t *Tree) ToMap() map[string]interface{} {
 		return false
 	})
 	return out
-}
-
-func (t *Tree) hasPrefixFn() func(s, pre string) bool {
-	if !t.CaseInsensitive {
-		return strings.HasPrefix
-	}
-
-	return hasPrefixFold
-}
-
-func (t *Tree) longestPrefixFn() func(a, b string) int {
-	if !t.CaseInsensitive {
-		return longestPrefix
-	}
-
-	return longestPrefixFold
 }
 
 // recursiveWalk is used to do a pre-order walk of a node

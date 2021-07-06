@@ -6,6 +6,7 @@ package radix
 import (
 	crand "crypto/rand"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"testing"
@@ -368,10 +369,28 @@ func TestRouter(t *testing.T) {
 	}
 
 	t.Log(r.LongestPrefix("/api/v1/user"))
-	r.WalkNearestPath("/api/v1/user/1000", func(k string, v interface{}) bool {
+	r.WalkNearestPath("/api/v1/user/1000", func(k string, v string) bool {
 		t.Log(k, v)
 		return false
 	})
+
+	r = New()
+	r.Insert("/api/x😀y/1", "0")
+	r.Insert("/api/x😀z/3", "0")
+	r.Insert("/api/x😄y/2", "0")
+	r.Insert("/api/x/z", "0")
+
+	for _, x := range r.root.edges {
+		log.Printf("%v", x.node.edges[1].node)
+	}
+	r.DeletePrefix("/api/x😀y")
+	r.Walk(func(k string, v string) bool {
+		t.Log(k)
+		return false
+	})
+	for _, x := range r.root.edges {
+		log.Printf("%v", x.node.edges[1].node)
+	}
 }
 
 // generateUUID is used to generate a random UUID
