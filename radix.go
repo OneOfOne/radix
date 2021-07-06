@@ -61,8 +61,14 @@ func (n *node[VT]) isLeaf() bool {
 }
 
 func (n *node[VT]) addEdge(e edge[VT]) {
-	n.edges = append(n.edges, e)
-	sort.Sort(edges[VT](n.edges))
+	num := len(n.edges)
+	idx := sort.Search(num, func(i int) bool {
+		return n.edges[i].label >= e.label
+	})
+
+	n.edges = append(n.edges, edge[VT]{})
+	copy(n.edges[idx+1:], n.edges[idx:])
+	n.edges[idx] = e
 }
 
 func (n *node[VT]) updateEdge(label byte, node *node[VT]) {
