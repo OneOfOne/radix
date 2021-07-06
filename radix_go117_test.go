@@ -1,5 +1,5 @@
-//go:build go1.18
-// +build go1.18
+//go:build !go1.18
+// +build !go1.18
 
 package radix
 
@@ -74,7 +74,7 @@ func TestRadix(t *testing.T) {
 }
 
 func TestRoot(t *testing.T) {
-	r := New[interface{}]()
+	r := New()
 	_, ok := r.Delete("")
 	if ok {
 		t.Fatalf("bad")
@@ -94,7 +94,7 @@ func TestRoot(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	r := New[interface{}]()
+	r := New()
 
 	s := []string{"", "A", "AB"}
 
@@ -127,7 +127,7 @@ func TestDeletePrefix(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		r := New[interface{}]()
+		r := New()
 		for _, ss := range test.inp {
 			r.Insert(ss, true)
 		}
@@ -151,7 +151,7 @@ func TestDeletePrefix(t *testing.T) {
 }
 
 func TestLongestPrefix(t *testing.T) {
-	r := New[interface{}]()
+	r := New()
 
 	keys := []string{
 		"",
@@ -199,7 +199,7 @@ func TestLongestPrefix(t *testing.T) {
 }
 
 func TestWalkPrefix(t *testing.T) {
-	r := New[interface{}]()
+	r := New()
 
 	keys := []string{
 		"foobar",
@@ -278,7 +278,7 @@ func TestWalkPrefix(t *testing.T) {
 }
 
 func TestWalkPath(t *testing.T) {
-	r := New[interface{}]()
+	r := New()
 
 	keys := []string{
 		"foo",
@@ -350,7 +350,7 @@ func TestWalkPath(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
-	r := New[interface{}]()
+	r := New()
 	routes := []string{
 		"/api/v1/user/:id",
 		"/api/v1/user/x",

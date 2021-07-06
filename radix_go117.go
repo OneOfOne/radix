@@ -6,8 +6,6 @@ package radix
 import (
 	"sort"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 )
 
 // WalkFn is used when walking the tree. Takes a
@@ -59,8 +57,14 @@ func (n *node) isLeaf() bool {
 }
 
 func (n *node) addEdge(e edge) {
-	n.edges = append(n.edges, e)
-	sort.Sort(edges(n.edges))
+	num := len(n.edges)
+	idx := sort.Search(num, func(i int) bool {
+		return n.edges[i].label >= e.label
+	})
+
+	n.edges = append(n.edges, edge{})
+	copy(n.edges[idx+1:], n.edges[idx:])
+	n.edges[idx] = e
 }
 
 func (n *node) updateEdge(label byte, node *node) {
@@ -596,6 +600,9 @@ func (t *Tree) longestPrefixFn() func(a, b string) int {
 // recursiveWalk is used to do a pre-order walk of a node
 // recursively. Returns true if the walk should be aborted
 func recursiveWalk(n *node, fn WalkFn) bool {
+	if n == nil {
+		return false
+	}
 	// Visit the leaf values if any
 	if n.leaf != nil && fn(n.leaf.key, n.leaf.val) {
 		return true
@@ -608,92 +615,4 @@ func recursiveWalk(n *node, fn WalkFn) bool {
 		}
 	}
 	return false
-}
-
-// longestPrefix finds the length of the shared prefix
-// of two strings
-func longestPrefix(k1, k2 string) (i int) {
-	max := len(k1)
-	if l := len(k2); l < max {
-		max = l
-	}
-
-	for i = 0; i < max; i++ {
-		if k1[i] != k2[i] {
-			return
-		}
-	}
-
-	return
-}
-
-// longestPrefixFold finds the length of the shared prefix
-// of two strings, ignoring case.
-func longestPrefixFold(k1, k2 string) (i int) {
-	if len(k1) > len(k2) {
-		k1, k2 = k2, k1
-	}
-
-	var r1, r2 rune
-	var sz int
-
-	for i < len(k1) {
-		if k1[i] < utf8.RuneSelf {
-			if !asciiEq(k1[i], k2[i]) {
-				return
-			}
-			i++
-			continue
-		}
-
-		r1, sz = utf8.DecodeLastRuneInString(k1[i:])
-		if r2, _ = utf8.DecodeRuneInString(k2[i:]); !runeEq(r1, r2) {
-			return
-		}
-		i += sz
-	}
-
-	return i + 1
-}
-
-func hasPrefixFold(s, pre string) (_ bool) {
-	if len(s) < len(pre) {
-		return
-	}
-
-	var pr, sr rune
-	var i, sz int
-
-	for i < len(pre) {
-		if pre[i] < utf8.RuneSelf {
-			if !asciiEq(pre[i], s[i]) {
-				return
-			}
-			i++
-			continue
-		}
-
-		pr, sz = utf8.DecodeLastRuneInString(pre[i:])
-		if sr, _ = utf8.DecodeRuneInString(s[i:]); !runeEq(pr, sr) {
-			return
-		}
-		i += sz
-	}
-
-	return true
-}
-
-func runeEq(sr, tr rune) bool {
-	return sr == tr || unicode.ToLower(sr) == unicode.ToLower(tr)
-}
-
-func asciiEq(sr, tr byte) bool {
-	return sr == tr || asciiLower(sr) == asciiLower(tr)
-}
-
-func asciiLower(r byte) byte {
-	if 'A' <= r && r <= 'Z' {
-		r += 'a' - 'A'
-	}
-	return r
 }

@@ -20,7 +20,11 @@ jobs:
       with:
         lfs: true
 
-    - name: Install dev.typeparams
+    - name: Run Tests (1.16)
+      shell: bash -l {0}
+      run: go test
+
+    - name: Run Tests (1.18)
       shell: bash -l {0}
       run: |
         go install golang.org/dl/gotip@master
@@ -28,10 +32,7 @@ jobs:
         gotip env -w GOEXPERIMENT=unified
         gotip version
         sed -e 's@1.1.@1.18@g' -i go.mod
-
-    - name: Run Tests
-      shell: bash -l {0}
-      run: gotip test -covermode=atomic -coverprofile=profile.cov ./...
+        gotip test -covermode=atomic -coverprofile=profile.cov ./...
 
     - name: Coverage
       uses: shogo82148/actions-goveralls@v1
