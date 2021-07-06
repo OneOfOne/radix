@@ -604,6 +604,9 @@ func (t *Tree[VT]) longestPrefixFn() func(a, b string) int {
 // recursiveWalk is used to do a pre-order walk of a node
 // recursively. Returns true if the walk should be aborted
 func recursiveWalk[VT any](n *node[VT], fn WalkFn[VT]) bool {
+	if n == nil {
+		return false
+	}
 	// Visit the leaf values if any
 	if n.leaf != nil && fn(n.leaf.key, n.leaf.val) {
 		return true
