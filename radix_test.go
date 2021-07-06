@@ -6,11 +6,26 @@ package radix
 import (
 	crand "crypto/rand"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"testing"
 )
+
+func ExampleRadix() {
+	var t Tree[int]
+	t.CaseInsensitive = true
+	// or thread-safe version
+	// var t radix.LockedTree[int]
+	t.Set("foo", 1)
+	t.Set("bar", 2)
+	t.Set("foobar", 2)
+
+	// Find the longest prefix match
+	m, _, _ := t.LongestPrefix("fOoZiP")
+	if m != "foo" {
+		panic("should be foo")
+	}
+}
 
 func TestRadix(t *testing.T) {
 	a := "aaabbbbccccdddd"
@@ -80,7 +95,7 @@ func TestRoot(t *testing.T) {
 	if ok {
 		t.Fatalf("bad")
 	}
-	_, ok = r.Insert("", true)
+	_, ok = r.Set("", true)
 	if ok {
 		t.Fatalf("bad")
 	}
@@ -100,7 +115,7 @@ func TestDelete(t *testing.T) {
 	s := []string{"", "A", "AB"}
 
 	for _, ss := range s {
-		r.Insert(ss, true)
+		r.Set(ss, true)
 	}
 
 	for _, ss := range s {
@@ -130,7 +145,7 @@ func TestDeletePrefix(t *testing.T) {
 	for _, test := range cases {
 		r := New[interface{}]()
 		for _, ss := range test.inp {
-			r.Insert(ss, true)
+			r.Set(ss, true)
 		}
 
 		deleted := r.DeletePrefix(test.prefix)
@@ -163,7 +178,7 @@ func TestLongestPrefix(t *testing.T) {
 		"foozip",
 	}
 	for _, k := range keys {
-		r.Insert(k, nil)
+		r.Set(k, nil)
 	}
 	if r.Len() != len(keys) {
 		t.Fatalf("bad len: %v %v", r.Len(), len(keys))
@@ -210,7 +225,7 @@ func TestWalkPrefix(t *testing.T) {
 		"zipzap",
 	}
 	for _, k := range keys {
-		r.Insert(k, nil)
+		r.Set(k, nil)
 	}
 	if r.Len() != len(keys) {
 		t.Fatalf("bad len: %v %v", r.Len(), len(keys))
@@ -290,7 +305,7 @@ func TestWalkPath(t *testing.T) {
 		"zipzap",
 	}
 	for _, k := range keys {
-		r.Insert(k, nil)
+		r.Set(k, nil)
 	}
 	if r.Len() != len(keys) {
 		t.Fatalf("bad len: %v %v", r.Len(), len(keys))
@@ -351,7 +366,7 @@ func TestWalkPath(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
-	r := New[string]()
+	r := New[interface{}]()
 	routes := []string{
 		"/api/v1/user/:id",
 		"/api/v1/user/x",
@@ -365,32 +380,26 @@ func TestRouter(t *testing.T) {
 	}
 
 	for _, route := range routes {
-		r.Insert(route, route)
+		r.Set(route, route)
 	}
 
 	t.Log(r.LongestPrefix("/api/v1/user"))
-	r.WalkNearestPath("/api/v1/user/1000", func(k string, v string) bool {
+	r.WalkNearestPath("/api/v1/user/1000", func(k string, v interface{}) bool {
 		t.Log(k, v)
 		return false
 	})
 
-	r = New[string]()
-	r.Insert("/api/x😀y/1", "0")
-	r.Insert("/api/x😀z/3", "0")
-	r.Insert("/api/x😄y/2", "0")
-	r.Insert("/api/x/z", "0")
+	r = New[interface{}]()
+	r.Set("/api/x😀y/1", "0")
+	r.Set("/api/x😀z/3", "1")
+	r.Set("/api/x😄y/2", "2")
+	r.Set("/api/x/z", "3")
 
-	for _, x := range r.root.edges {
-		log.Printf("%v", x.node.edges[1].node)
-	}
 	r.DeletePrefix("/api/x😀y")
-	r.Walk(func(k string, v string) bool {
+	r.Walk(func(k string, v interface{}) bool {
 		t.Log(k)
 		return false
 	})
-	for _, x := range r.root.edges {
-		log.Printf("%v", x.node.edges[1].node)
-	}
 }
 
 // generateUUID is used to generate a random UUID

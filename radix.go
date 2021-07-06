@@ -103,11 +103,26 @@ func (n *node[VT]) delEdge(label byte) {
 	}
 }
 
+// New returns an empty Tree.
+// The same as just using `var t Tree[VT]`.
+func New[VT any]() *Tree[VT] {
+	var t Tree[VT]
+	return &t
+}
+
+// NewFromMap returns a new tree containing the keys
+// from an existing map
+func NewFromMap[VT any](m map[string]VT) *Tree[VT] {
+	var t Tree[VT]
+	t.MergeMap(m)
+	return &t
+}
+
 // Tree implements a radix tree. This can be treated as a
 // Dictionary abstract data type. The main advantage over
 // a standard hash map is prefix-based lookups and
 // ordered iteration.
-// Can be used without calling New()
+// The zero value is usable.
 type Tree[VT any] struct {
 	root node[VT]
 	size int
@@ -120,48 +135,30 @@ type Tree[VT any] struct {
 	zero VT
 }
 
-// New returns an empty Tree.
-// The same as just using `var t Tree[VT]`.
-func New[VT any]() *Tree[VT] {
-	var t Tree[VT]
-	return &t
-}
-
-// NewFromMap returns a new tree containing the keys
-// from an existing map
-func NewFromMap[VT any](m map[string]VT) *Tree[VT] {
-	var t Tree[VT]
-	for k, v := range m {
-		t.Insert(k, v)
-	}
-	return &t
-}
-
 // Len is used to return the number of elements in the tree.
 func (t *Tree[VT]) Len() int {
 	return t.size
 }
 
-// Insert is used to add a newentry or update
+// Set is used to add a newentry or update
 // an existing entry. Returns if updated.
-// *Not* safe for concurrent calls.
-func (t *Tree[VT]) Insert(s string, v VT) (VT, bool) {
+func (t *Tree[VT]) Set(key string, value VT) (VT, bool) {
 	var parent *node[VT]
 	n := &t.root
 	lcp := longestPrefixFn(t.CaseInsensitive)
-	search := s
+	search := key
 	for {
 		// Handle key exhaution
 		if len(search) == 0 {
 			if n.isLeaf() {
 				old := n.leaf.val
-				n.leaf.val = v
+				n.leaf.val = value
 				return old, true
 			}
 
 			n.leaf = &leafNode[VT]{
-				key: s,
-				val: v,
+				key: key,
+				val: value,
 			}
 			t.size++
 			return t.zero, false
@@ -177,8 +174,8 @@ func (t *Tree[VT]) Insert(s string, v VT) (VT, bool) {
 				label: search[0],
 				node: &node[VT]{
 					leaf: &leafNode[VT]{
-						key: s,
-						val: v,
+						key: key,
+						val: value,
 					},
 					prefix: search,
 				},
@@ -211,8 +208,8 @@ func (t *Tree[VT]) Insert(s string, v VT) (VT, bool) {
 
 		// Create a new leaf node
 		leaf := &leafNode[VT]{
-			key: s,
-			val: v,
+			key: key,
+			val: value,
 		}
 
 		// If the new key is a subset, add to to this node
@@ -236,7 +233,6 @@ func (t *Tree[VT]) Insert(s string, v VT) (VT, bool) {
 
 // Delete is used to delete a key, returning the previous
 // value and if it was deleted.
-// *Not* safe for concurrent calls.
 func (t *Tree[VT]) Delete(s string) (VT, bool) {
 	var (
 		parent *node[VT]
@@ -299,7 +295,6 @@ DELETE:
 // DeletePrefix is used to delete the subtree under a prefix
 // Returns how many nodes were deleted.
 // Use this to delete large subtrees efficiently.
-// *Not* safe for concurrent calls.
 func (t *Tree[VT]) DeletePrefix(s string) int {
 	return t.deletePrefix(nil, &t.root, s)
 }
@@ -360,7 +355,6 @@ func (n *node[VT]) mergeChild() {
 
 // Get is used to lookup a specific key, returning
 // the value and if it was found.
-// Safe for concurrent calls.
 func (t *Tree[VT]) Get(s string) (VT, bool) {
 	n := &t.root
 	hp := hasPrefixFn(t.CaseInsensitive)
@@ -392,7 +386,6 @@ func (t *Tree[VT]) Get(s string) (VT, bool) {
 
 // LongestPrefix is like Get, but instead of an
 // exact match, it will return the longest prefix match.
-// Safe for concurrent calls.
 func (t *Tree[VT]) LongestPrefix(s string) (string, VT, bool) {
 	var (
 		last   *leafNode[VT]
@@ -431,7 +424,6 @@ func (t *Tree[VT]) LongestPrefix(s string) (string, VT, bool) {
 }
 
 // Minimum is used to return the minimum value in the tree.
-// Safe for concurrent calls.
 func (t *Tree[VT]) Minimum() (string, VT, bool) {
 	n := &t.root
 	for {
@@ -448,7 +440,6 @@ func (t *Tree[VT]) Minimum() (string, VT, bool) {
 }
 
 // Maximum is used to return the maximum value in the tree.
-// Safe for concurrent calls.
 func (t *Tree[VT]) Maximum() (string, VT, bool) {
 	n := &t.root
 	for {
@@ -465,13 +456,11 @@ func (t *Tree[VT]) Maximum() (string, VT, bool) {
 }
 
 // Walk is used to walk the tree.
-// Safe for concurrent calls.
 func (t *Tree[VT]) Walk(fn WalkFn[VT]) {
 	recursiveWalk(&t.root, fn)
 }
 
 // WalkPrefix is used to walk the tree under a prefix.
-// Safe for concurrent calls.
 func (t *Tree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) {
 	n := &t.root
 	hp := hasPrefixFn(t.CaseInsensitive)
@@ -503,7 +492,6 @@ func (t *Tree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) {
 }
 
 // WalkNearestPath is like WalkPath but will start at the longest common prefix.
-// Safe for concurrent calls.
 func (t *Tree[VT]) WalkNearestPath(path string, fn WalkFn[VT]) {
 	var (
 		last   *node[VT]
@@ -545,7 +533,6 @@ func (t *Tree[VT]) WalkNearestPath(path string, fn WalkFn[VT]) {
 // from the root down to a given leaf. Where WalkPrefix walks
 // all the entries *under* the given prefix, this walks the
 // entries *above* the given prefix.
-// Safe for concurrent calls.
 func (t *Tree[VT]) WalkPath(path string, fn WalkFn[VT]) {
 	n := &t.root
 	hp := hasPrefixFn(t.CaseInsensitive)
@@ -576,8 +563,20 @@ func (t *Tree[VT]) WalkPath(path string, fn WalkFn[VT]) {
 	}
 }
 
+func (t *Tree[VT]) MergeMap(m map[string]VT) {
+	for k, v := range m {
+		t.Set(k, v)
+	}
+}
+
+func (t *Tree[VT]) Merge(ot *Tree[VT]) {
+	ot.Walk(func(k string, v VT) bool {
+		t.Set(k, v)
+		return false
+	})
+}
+
 // ToMap is used to walk the tree and convert it into a map.
-// Safe for concurrent calls.
 func (t *Tree[VT]) ToMap() map[string]VT {
 	out := make(map[string]VT, t.size)
 	t.Walk(func(k string, v VT) bool {

@@ -5,7 +5,6 @@ package radix
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 )
 
@@ -29,19 +28,24 @@ func BenchmarkHasPrefix(b *testing.B) {
 }
 
 func BenchmarkTree(b *testing.B) {
-	var keys [10000]string
+	var keys [100000]string
 	for i := range keys {
 		keys[i] = fmt.Sprintf("/api/%02d/%03d/%04d", i%10, i%100, i+1)
 	}
+
 	b.ResetTimer()
 
 	var t Tree[int]
 
-	b.Run("Insert", func(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		first := true
 		for i := 0; i < b.N; i++ {
 			for x, k := range keys {
-				t.Insert(k, x)
+				if _, updated := t.Set(k, x); !updated && !first {
+					b.Fatal("bad update")
+				}
 			}
+			first = false
 		}
 
 		if t.Len() != len(keys) {
@@ -78,18 +82,4 @@ func BenchmarkTree(b *testing.B) {
 			}
 		}
 	})
-}
-
-func BenchmarkInsert(b *testing.B) {
-	r := New[bool]()
-	for i := 0; i < 10000; i++ {
-		r.Insert(fmt.Sprintf("init%d", i), true)
-	}
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		_, updated := r.Insert(strconv.Itoa(n), true)
-		if updated {
-			b.Fatal("bad")
-		}
-	}
 }

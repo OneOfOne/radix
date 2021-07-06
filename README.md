@@ -13,23 +13,34 @@ As a radix tree, it provides the following:
 * Minimum / Maximum value lookups
 * Ordered iteration
 * Can walk the tree from the nearest path
-* Generic version for go1.18+
+* *optional* case-insensitive matching
+* Concurrency-safe version
+* Generic
 
 Example
 =======
 
-Below is a simple example of usage
-
 ```go
 // Create a tree
-r := radix.New()
-r.Insert("foo", 1)
-r.Insert("bar", 2)
-r.Insert("foobar", 2)
+var t radix.Tree[int]
+t.CaseInsensitive = true
+// or thread-safe version
+// var t radix.LockedTree[int]
+t.Set("foo", 1)
+t.Set("bar", 2)
+t.Set("foobar", 2)
 
 // Find the longest prefix match
-m, _, _ := r.LongestPrefix("foozip")
+m, _, _ := t.LongestPrefix("fOoZiP")
 if m != "foo" {
     panic("should be foo")
 }
+```
+
+Install Go with generics support (<small>[dev.typeparams](https://github.com/golang/go/tree/dev.typeparams)</small>)
+======
+
+```sh
+$ go get golang.org/dl/gotip
+$ gotip download dev.typeparams
 ```
