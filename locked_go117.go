@@ -1,41 +1,41 @@
-//go:build go1.18
-// +build go1.18
+//go:build !go1.18
+// +build !go1.18
 
 package radix
 
 import "sync"
 
-func NewLocked[VT any]() *LockedTree[VT] {
-	var lt LockedTree[VT]
+func NewLocked() *LockedTree {
+	var lt LockedTree
 	return &lt
 }
 
-func NewLockedFromMap[VT any](m map[string]VT) *LockedTree[VT] {
-	var lt LockedTree[VT]
+func NewLockedFromMap(m map[string]interface{}) *LockedTree {
+	var lt LockedTree
 	lt.t.MergeMap(m)
 	return &lt
 }
 
 // LockedTree is a concurrency safe version of Tree.
-type LockedTree[VT any] struct {
-	t Tree[VT]
+type LockedTree struct {
+	t Tree
 	m sync.RWMutex
 }
 
 // Update aquires a rw lock and calls fn with the underlying tree
-func (lt *LockedTree[VT]) Update(fn func(t *Tree[VT])) {
+func (lt *LockedTree) Update(fn func(t *Tree)) {
 	lt.m.Lock()
 	defer lt.m.Unlock()
 	fn(&lt.t)
 }
 
-func (lt *LockedTree[VT]) MergeMap(m map[string]VT) {
+func (lt *LockedTree) MergeMap(m map[string]interface{}) {
 	lt.m.Lock()
 	lt.t.MergeMap(m)
 	lt.m.Unlock()
 }
 
-func (lt *LockedTree[VT]) Merge(ot *LockedTree[VT]) {
+func (lt *LockedTree) Merge(ot *LockedTree) {
 	ot.m.RLock()
 	lt.m.Lock()
 	lt.t.Merge(&ot.t)
@@ -43,56 +43,56 @@ func (lt *LockedTree[VT]) Merge(ot *LockedTree[VT]) {
 	ot.m.RUnlock()
 }
 
-func (lt *LockedTree[VT]) Set(key string, value VT) (old VT, found bool) {
+func (lt *LockedTree) Set(key string, value interface{}) (old interface{}, found bool) {
 	lt.m.Lock()
 	old, found = lt.t.Set(key, value)
 	lt.m.Unlock()
 	return
 }
 
-func (lt *LockedTree[VT]) Delete(key string) (old VT, found bool) {
+func (lt *LockedTree) Delete(key string) (old interface{}, found bool) {
 	lt.m.Lock()
 	old, found = lt.t.Delete(key)
 	lt.m.Unlock()
 	return
 }
 
-func (lt *LockedTree[VT]) DeletePrefix(prefix string) (count int) {
+func (lt *LockedTree) DeletePrefix(prefix string) (count int) {
 	lt.m.Lock()
 	count = lt.t.DeletePrefix(prefix)
 	lt.m.Unlock()
 	return
 }
 
-func (lt *LockedTree[VT]) Get(key string) (val VT, found bool) {
+func (lt *LockedTree) Get(key string) (val interface{}, found bool) {
 	lt.m.RLock()
 	val, found = lt.t.Get(key)
 	lt.m.RUnlock()
 	return
 }
 
-func (lt *LockedTree[VT]) LongestPrefix(prefix string) (key string, val VT, found bool) {
+func (lt *LockedTree) LongestPrefix(prefix string) (key string, val interface{}, found bool) {
 	lt.m.RLock()
 	key, val, found = lt.t.LongestPrefix(prefix)
 	lt.m.RUnlock()
 	return
 }
 
-func (lt *LockedTree[VT]) Minimum() (key string, val VT, found bool) {
+func (lt *LockedTree) Minimum() (key string, val interface{}, found bool) {
 	lt.m.RLock()
 	key, val, found = lt.t.Minimum()
 	lt.m.RUnlock()
 	return
 }
 
-func (lt *LockedTree[VT]) Maximum() (key string, val VT, found bool) {
+func (lt *LockedTree) Maximum() (key string, val interface{}, found bool) {
 	lt.m.RLock()
 	key, val, found = lt.t.Maximum()
 	lt.m.RUnlock()
 	return
 }
 
-func (lt *LockedTree[VT]) Len() (ln int) {
+func (lt *LockedTree) Len() (ln int) {
 	lt.m.RLock()
 	ln = lt.t.Len()
 	lt.m.RUnlock()
@@ -101,7 +101,7 @@ func (lt *LockedTree[VT]) Len() (ln int) {
 
 // Walk
 // It is *NOT* safe to modify the tree inside fn.
-func (lt *LockedTree[VT]) Walk(fn WalkFn[VT]) bool {
+func (lt *LockedTree) Walk(fn WalkFn) bool {
 	lt.m.RLock()
 	defer lt.m.RUnlock()
 	return lt.t.Walk(fn)
@@ -109,7 +109,7 @@ func (lt *LockedTree[VT]) Walk(fn WalkFn[VT]) bool {
 
 // WalkPrefix
 // It is *NOT* safe to modify the tree inside fn.
-func (lt *LockedTree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) bool {
+func (lt *LockedTree) WalkPrefix(prefix string, fn WalkFn) bool {
 	lt.m.RLock()
 	defer lt.m.RUnlock()
 	return lt.t.WalkPrefix(prefix, fn)
@@ -117,7 +117,7 @@ func (lt *LockedTree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) bool {
 
 // WalkPath
 // It is *NOT* safe to modify the tree inside fn.
-func (lt *LockedTree[VT]) WalkPath(path string, fn WalkFn[VT]) bool {
+func (lt *LockedTree) WalkPath(path string, fn WalkFn) bool {
 	lt.m.RLock()
 	defer lt.m.RUnlock()
 	return lt.t.WalkPath(path, fn)
@@ -125,16 +125,16 @@ func (lt *LockedTree[VT]) WalkPath(path string, fn WalkFn[VT]) bool {
 
 // WalkNearestPath
 // It is *NOT* safe to modify the tree inside fn.
-func (lt *LockedTree[VT]) WalkNearestPath(path string, fn WalkFn[VT]) bool {
+func (lt *LockedTree) WalkNearestPath(path string, fn WalkFn) bool {
 	lt.m.RLock()
 	defer lt.m.RUnlock()
 	return lt.t.WalkNearestPath(path, fn)
 }
 
-func (lt *LockedTree[VT]) ToMap() map[string]VT {
+func (lt *LockedTree) ToMap() map[string]interface{} {
 	lt.m.RLock()
-	out := make(map[string]VT, lt.t.size)
-	lt.t.Walk(func(k string, v VT) bool {
+	out := make(map[string]interface{}, lt.t.size)
+	lt.t.Walk(func(k string, v interface{}) bool {
 		out[k] = v
 		return false
 	})

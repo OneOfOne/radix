@@ -73,7 +73,7 @@ func longestPrefixFold(k1, k2 string) (i int) {
 		i += sz
 	}
 
-	return i + 1
+	return i
 }
 
 func hasPrefixFold(s, pre string) (_ bool) {

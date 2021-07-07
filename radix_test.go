@@ -367,7 +367,9 @@ func TestWalkPath(t *testing.T) {
 
 func TestRouter(t *testing.T) {
 	r := New[interface{}]()
+	r.CaseInsensitive = true
 	routes := []string{
+		"/test",
 		"/api/v1/user/:id",
 		"/api/v1/user/x",
 		"/api/v1/user/x",

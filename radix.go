@@ -456,20 +456,19 @@ func (t *Tree[VT]) Maximum() (string, VT, bool) {
 }
 
 // Walk is used to walk the tree.
-func (t *Tree[VT]) Walk(fn WalkFn[VT]) {
-	recursiveWalk(&t.root, fn)
+func (t *Tree[VT]) Walk(fn WalkFn[VT]) bool {
+	return recursiveWalk(&t.root, fn)
 }
 
 // WalkPrefix is used to walk the tree under a prefix.
-func (t *Tree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) {
+func (t *Tree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) bool {
 	n := &t.root
 	hp := hasPrefixFn(t.CaseInsensitive)
 	search := prefix
 	for {
 		// Check for key exhaution
 		if len(search) == 0 {
-			recursiveWalk(n, fn)
-			return
+			return recursiveWalk(n, fn)
 		}
 
 		// Look for an edge
@@ -483,16 +482,17 @@ func (t *Tree[VT]) WalkPrefix(prefix string, fn WalkFn[VT]) {
 			search = search[len(n.prefix):]
 		} else if hp(n.prefix, search) {
 			// Child may be under our search prefix
-			recursiveWalk(n, fn)
-			return
+			return recursiveWalk(n, fn)
 		} else {
 			break
 		}
 	}
+
+	return false
 }
 
 // WalkNearestPath is like WalkPath but will start at the longest common prefix.
-func (t *Tree[VT]) WalkNearestPath(path string, fn WalkFn[VT]) {
+func (t *Tree[VT]) WalkNearestPath(path string, fn WalkFn[VT]) bool {
 	var (
 		last   *node[VT]
 		n      = &t.root
@@ -525,33 +525,35 @@ func (t *Tree[VT]) WalkNearestPath(path string, fn WalkFn[VT]) {
 	}
 
 	if last != nil {
-		recursiveWalk(last, fn)
+		return recursiveWalk(last, fn)
 	}
+
+	return false
 }
 
 // WalkPath is used to walk the tree, but only visiting nodes
 // from the root down to a given leaf. Where WalkPrefix walks
 // all the entries *under* the given prefix, this walks the
 // entries *above* the given prefix.
-func (t *Tree[VT]) WalkPath(path string, fn WalkFn[VT]) {
+func (t *Tree[VT]) WalkPath(path string, fn WalkFn[VT]) bool {
 	n := &t.root
 	hp := hasPrefixFn(t.CaseInsensitive)
 	search := path
 	for {
 		// Visit the leaf values if any
 		if n.leaf != nil && fn(n.leaf.key, n.leaf.val) {
-			return
+			return true
 		}
 
 		// Check for key exhaution
 		if len(search) == 0 {
-			return
+			return false
 		}
 
 		// Look for an edge
 		n = n.getEdge(search[0])
 		if n == nil {
-			return
+			return false
 		}
 
 		// Consume the search prefix
@@ -561,6 +563,7 @@ func (t *Tree[VT]) WalkPath(path string, fn WalkFn[VT]) {
 			break
 		}
 	}
+	return false
 }
 
 func (t *Tree[VT]) MergeMap(m map[string]VT) {
