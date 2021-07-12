@@ -1,3 +1,3 @@
 module go.oneofone.dev/radix
 
-go 1.18
+go 1.14

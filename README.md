@@ -51,7 +51,7 @@ if m != "foo" {
 
 ```sh
 # outside a module
-$ go get go.oneofone.dev/radix
+$ go get go.oneofone.dev/radix@main
 $ sh $(go env GOPATH)/src/go.oneofone.dev/radix/gen.sh "interface{}" # or "string" or "[]pkg.SomeStruct"
 ```
 

@@ -31,7 +31,7 @@ jobs:
         gotip download dev.typeparams
         gotip env -w GOEXPERIMENT=unified
         gotip version
-        sed -e 's@1.1.@1.18@g' -i go.mod
+        sed -e 's@1\.14@1.18@g' -i go.mod
         gotip test -covermode=atomic -coverprofile=profile.cov ./...
 
     - name: Coverage
