@@ -1,33 +1,41 @@
 radix
 [![Go Reference](https://pkg.go.dev/badge/go.oneofone.dev/radix.svg)](https://pkg.go.dev/go.oneofone.dev/radix)
+![test status](https://github.com/OneOfOne/radix/actions/workflows/test.yml/badge.svg)
 [![Coverall](https://coveralls.io/repos/github/OneOfOne/radix/badge.svg?branch=main)](https://coveralls.io/github/OneOfOne/radix)
 =========
 
-`radix` implements a [radix tree](http://en.wikipedia.org/wiki/Radix_tree).
-The package only provides a single `Tree` implementation, optimized for sparse nodes.
+`radix` implements a [radix tree](http://en.wikipedia.org/wiki/Radix_tree), optimized for sparse nodes.
 
-Based on [armon/go-radix](github.com/armon/go-radix), with additional optimizations and a generic version.
+This is a hard-fork based on [armon/go-radix](github.com/armon/go-radix), with some additions.
 
-As a radix tree, it provides the following:
+# Features
+
 * O(k) operations. In many cases, this can be faster than a hash table since the hash function is an O(k) operation, and hash tables have very poor cache locality.
 * Minimum / Maximum value lookups
 * Ordered iteration
-* Can walk the tree from the nearest path
-* *optional* case-insensitive matching
-* Concurrency-safe version
-* UTF-8 safe.
-* Generic
 
-Example
-=======
+## New
+* Can walk the tree from the nearest path
+* Includes a thread-safe version.
+* Unicode safe.
+* Case-insensitive matching support.
+* Go Generics support.
+
+# TODO
+
+* Marshaling/Unmarshaling support (currently you can dump to json).
+* More optimizations.
+* More benchmarks.
+
+# Usage
 
 ```go
 // go get go.oneofone.dev/radix
-// Create a tree
-var t radix.Tree[int]
-t.CaseInsensitive = true
+// Create a case-insensistive tree
+r := radix.New[int](true)
+
 // or thread-safe version
-// var t radix.LockedTree[int]
+// t := NewSafe[int](true)
 t.Set("foo", 1)
 t.Set("bar", 2)
 t.Set("foobar", 2)
@@ -39,10 +47,30 @@ if m != "foo" {
 }
 ```
 
-Install Go with generics support (<small>[dev.typeparams](https://github.com/golang/go/tree/dev.typeparams)</small>)
-======
+### Generating a typed version for go < 1.18 (requires perl and posix shell)
+
+```sh
+# outside a module
+$ go get go.oneofone.dev/radix
+$ sh $(go env GOPATH)/src/go.oneofone.dev/radix/gen.sh "interface{}" # or "string" or "[]pkg.SomeStruct"
+```
+
+# Using generics
+
+Install Go 1.18 (<small>[dev.typeparams](https://github.com/golang/go/tree/dev.typeparams)</small>)
 
 ```sh
 $ go get golang.org/dl/gotip
 $ gotip download dev.typeparams
 ```
+
+# Contributions
+
+Anyone is more than welcome to open pull requests provided they adhere to the Go community [code of conduct](https://golang.org/conduct).
+
+It's recommended that any modifications should be on the [generic](radix.go),
+however if that's not possible, I'll port any changes from the [compact](radix_go117.go).
+
+# License
+
+[MIT](LICENSE)
