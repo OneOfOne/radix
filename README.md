@@ -6,7 +6,7 @@ radix
 
 `radix` implements a [radix tree](http://en.wikipedia.org/wiki/Radix_tree), optimized for sparse nodes.
 
-This is a hard-fork based on [armon/go-radix](github.com/armon/go-radix), with some additions.
+This is a hard-fork based on [armon/go-radix](https://github.com/armon/go-radix), with some additions.
 
 # Features
 
@@ -30,7 +30,7 @@ This is a hard-fork based on [armon/go-radix](github.com/armon/go-radix), with s
 # Usage
 
 ```go
-// go get go.oneofone.dev/radix
+// go get go.oneofone.dev/radix@main
 // Create a case-insensistive tree
 r := radix.New[int](true)
 
@@ -51,17 +51,18 @@ if m != "foo" {
 
 ```sh
 # outside a module
-$ go get go.oneofone.dev/radix@main
+$ go get go.oneofone.dev/radix
 $ sh $(go env GOPATH)/src/go.oneofone.dev/radix/gen.sh "interface{}" # or "string" or "[]pkg.SomeStruct"
 ```
 
-# Using generics
+# Using the generic version
 
 Install Go 1.18 (<small>[dev.typeparams](https://github.com/golang/go/tree/dev.typeparams)</small>)
 
 ```sh
 $ go get golang.org/dl/gotip
 $ gotip download dev.typeparams
+$ gotip get go.oneofone.dev/radix@main # note that the go proxy does not support go 1.18 yet.
 ```
 
 # Contributions

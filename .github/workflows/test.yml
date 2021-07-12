@@ -1,4 +1,12 @@
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - ".github/**"
+      - "*.md"
+      - "*.sh"
+      - LICENSE
+    branches:
+      - main
 name: tests
 jobs:
   test:
