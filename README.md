@@ -15,12 +15,14 @@ As a radix tree, it provides the following:
 * Can walk the tree from the nearest path
 * *optional* case-insensitive matching
 * Concurrency-safe version
+* UTF-8 safe.
 * Generic
 
 Example
 =======
 
 ```go
+// go get go.oneofone.dev/radix
 // Create a tree
 var t radix.Tree[int]
 t.CaseInsensitive = true

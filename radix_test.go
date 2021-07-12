@@ -13,7 +13,7 @@ import (
 
 func ExampleRadix() {
 	var t Tree[int]
-	t.CaseInsensitive = true
+	t.fold = true
 	// or thread-safe version
 	// var t radix.LockedTree[int]
 	t.Set("foo", 1)
@@ -45,7 +45,7 @@ func TestRadix(t *testing.T) {
 		}
 	}
 
-	r := NewFromMap(inp)
+	r := New[interface{}](false).MergeMap(inp)
 	if r.Len() != len(inp) {
 		t.Fatalf("bad length: %v %v", r.Len(), len(inp))
 	}
@@ -90,7 +90,7 @@ func TestRadix(t *testing.T) {
 }
 
 func TestRoot(t *testing.T) {
-	r := New[interface{}]()
+	r := New[interface{}](false)
 	_, ok := r.Delete("")
 	if ok {
 		t.Fatalf("bad")
@@ -110,7 +110,7 @@ func TestRoot(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	r := New[interface{}]()
+	r := New[interface{}](false)
 
 	s := []string{"", "A", "AB"}
 
@@ -143,7 +143,7 @@ func TestDeletePrefix(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		r := New[interface{}]()
+		r := New[interface{}](false)
 		for _, ss := range test.inp {
 			r.Set(ss, true)
 		}
@@ -167,7 +167,7 @@ func TestDeletePrefix(t *testing.T) {
 }
 
 func TestLongestPrefix(t *testing.T) {
-	r := New[interface{}]()
+	r := New[interface{}](false)
 
 	keys := []string{
 		"",
@@ -215,7 +215,7 @@ func TestLongestPrefix(t *testing.T) {
 }
 
 func TestWalkPrefix(t *testing.T) {
-	r := New[interface{}]()
+	r := New[interface{}](false)
 
 	keys := []string{
 		"foobar",
@@ -294,7 +294,7 @@ func TestWalkPrefix(t *testing.T) {
 }
 
 func TestWalkPath(t *testing.T) {
-	r := New[interface{}]()
+	r := New[interface{}](false)
 
 	keys := []string{
 		"foo",
@@ -366,8 +366,7 @@ func TestWalkPath(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
-	r := New[interface{}]()
-	r.CaseInsensitive = true
+	r := New[interface{}](true)
 	routes := []string{
 		"/test",
 		"/api/v1/user/:id",
@@ -391,7 +390,7 @@ func TestRouter(t *testing.T) {
 		return false
 	})
 
-	r = New[interface{}]()
+	r = New[interface{}](false)
 	r.Set("/api/x😀y/1", "0")
 	r.Set("/api/x😀z/3", "1")
 	r.Set("/api/x😄y/2", "2")

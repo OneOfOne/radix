@@ -104,7 +104,10 @@ func hasPrefixFold(s, pre string) (_ bool) {
 }
 
 func runeEq(sr, tr rune) bool {
-	return sr == tr || unicode.ToLower(sr) == unicode.ToLower(tr)
+	if sr == tr {
+		return true
+	}
+	return toLower(sr) == toLower(tr)
 }
 
 func asciiEq(sr, tr byte) bool {
@@ -115,5 +118,23 @@ func asciiLower(r byte) byte {
 	if 'A' <= r && r <= 'Z' {
 		r += 'a' - 'A'
 	}
+	return r
+}
+
+func toLower(r rune) rune {
+	if r < utf8.RuneSelf {
+		if 'A' <= r && r <= 'Z' {
+			r += 'a' - 'A'
+		}
+		return r
+	}
+	return unicode.ToLower(r)
+}
+
+func nextRune(s string) rune {
+	if s[0] < utf8.RuneSelf {
+		return rune(s[0])
+	}
+	r, _ := utf8.DecodeRuneInString(s)
 	return r
 }
