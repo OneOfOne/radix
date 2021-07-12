@@ -401,6 +401,7 @@ func TestRouter(t *testing.T) {
 		t.Log(k)
 		return false
 	})
+	t.Log(r.Dump(true))
 }
 
 // generateUUID is used to generate a random UUID

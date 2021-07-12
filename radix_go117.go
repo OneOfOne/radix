@@ -4,6 +4,7 @@
 package radix
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -17,41 +18,27 @@ type WalkFn func(s string, v interface{}) bool
 
 // edge is used to represent an edge node
 type edge struct {
-	node  *node
-	label rune
-}
-
-type edges []edge
-
-func (e edges) Len() int {
-	return len(e)
-}
-
-func (e edges) Less(i, j int) bool {
-	return e[i].label < e[j].label
-}
-
-func (e edges) Swap(i, j int) {
-	e[i], e[j] = e[j], e[i]
+	Label rune  `json:"label"`
+	Node  *node `json:"node,omitempty"`
 }
 
 // leafNode is used to represent a value
 type leafNode struct {
-	key string
-	val interface{}
+	Key   string      `json:"key,omitempty"`
+	Value interface{} `json:"value,omitempty"`
 }
 
 type node struct {
-	// leaf is used to store possible leaf
-	leaf *leafNode
-
-	// prefix is the common prefix we ignore
-	prefix string
-
 	// Edges should be stored in-order for iteration.
 	// We avoid a fully materialized slice to save memory,
 	// since in most cases we expect to be sparse
-	edges edges
+	Edges []edge `json:"edges,omitempty"`
+
+	// Leaf is used to store possible Leaf
+	Leaf *leafNode `json:"leaf,omitempty"`
+
+	// Prefix is the common Prefix we ignore
+	Prefix string `json:"prefix,omitempty"`
 }
 
 func (n *node) dump(w io.Writer, indent string) (err error) {
@@ -59,55 +46,55 @@ func (n *node) dump(w io.Writer, indent string) (err error) {
 		_, err = fmt.Fprintf(w, "%s<Node />", indent)
 		return
 	}
-	fmt.Fprintf(w, "%s<Node prefix=%q", indent, n.prefix)
+	fmt.Fprintf(w, "%s<Node prefix=%q", indent, n.Prefix)
 	if n.isLeafInTheWind() {
-		fmt.Fprintf(w, " key=%q value=[%v]", n.leaf.key, n.leaf.val)
+		fmt.Fprintf(w, " key=%q value=[%v]", n.Leaf.Key, n.Leaf.Value)
 	}
-	if len(n.edges) == 0 {
+	if len(n.Edges) == 0 {
 		_, err = fmt.Fprintln(w, "/>")
 		return
 	} else {
 		_, err = fmt.Fprintln(w, ">")
 	}
 	indent = indent + "\t"
-	for _, e := range n.edges {
-		fmt.Fprintf(w, "%s<Edge label=%q rune=%d>\n", indent, e.label, e.label)
-		if err = e.node.dump(w, indent+"\t"); err != nil {
+	for _, e := range n.Edges {
+		fmt.Fprintf(w, "%s<Edge label=%q rune=%d>\n", indent, e.Label, e.Label)
+		if err = e.Node.dump(w, indent+"\t"); err != nil {
 			return
 		}
-		fmt.Fprintf(w, "%s</Edge label=%q rune=%d>\n", indent, e.label, e.label)
+		fmt.Fprintf(w, "%s</Edge label=%q rune=%d>\n", indent, e.Label, e.Label)
 	}
-	_, err = fmt.Fprintf(w, "%s</Node prefix=%q>\n", indent[:len(indent)-1], n.prefix)
+	_, err = fmt.Fprintf(w, "%s</Node prefix=%q>\n", indent[:len(indent)-1], n.Prefix)
 	return
 }
 
 func (n *node) isLeafInTheWind() bool {
-	return n.leaf != nil
+	return n.Leaf != nil
 }
 
 func (n *node) addEdge(e edge, fold bool) {
 	if fold {
-		e.label = toLower(e.label)
+		e.Label = toLower(e.Label)
 	}
-	num := len(n.edges)
+	num := len(n.Edges)
 	idx := sort.Search(num, func(i int) bool {
-		return n.edges[i].label >= e.label
+		return n.Edges[i].Label >= e.Label
 	})
-	n.edges = append(n.edges, edge{})
-	copy(n.edges[idx+1:], n.edges[idx:])
-	n.edges[idx] = e
+	n.Edges = append(n.Edges, edge{})
+	copy(n.Edges[idx+1:], n.Edges[idx:])
+	n.Edges[idx] = e
 }
 
 func (n *node) updateEdge(label rune, node *node, fold bool) {
 	if fold {
 		label = toLower(label)
 	}
-	num := len(n.edges)
+	num := len(n.Edges)
 	idx := sort.Search(num, func(i int) bool {
-		return n.edges[i].label >= label
+		return n.Edges[i].Label >= label
 	})
-	if idx < num && n.edges[idx].label == label {
-		n.edges[idx].node = node
+	if idx < num && n.Edges[idx].Label == label {
+		n.Edges[idx].Node = node
 		return
 	}
 	panic("replacing missing edge")
@@ -117,12 +104,12 @@ func (n *node) getEdge(label rune, fold bool) *node {
 	if fold {
 		label = toLower(label)
 	}
-	num := len(n.edges)
+	num := len(n.Edges)
 	idx := sort.Search(num, func(i int) bool {
-		return n.edges[i].label >= label
+		return n.Edges[i].Label >= label
 	})
-	if idx < num && n.edges[idx].label == label {
-		return n.edges[idx].node
+	if idx < num && n.Edges[idx].Label == label {
+		return n.Edges[idx].Node
 	}
 	return nil
 }
@@ -131,14 +118,14 @@ func (n *node) delEdge(label rune, fold bool) {
 	if fold {
 		label = toLower(label)
 	}
-	num := len(n.edges)
+	num := len(n.Edges)
 	idx := sort.Search(num, func(i int) bool {
-		return n.edges[i].label >= label
+		return n.Edges[i].Label >= label
 	})
-	if idx < num && n.edges[idx].label == label {
-		copy(n.edges[idx:], n.edges[idx+1:])
-		n.edges[len(n.edges)-1] = edge{}
-		n.edges = n.edges[:len(n.edges)-1]
+	if idx < num && n.Edges[idx].Label == label {
+		copy(n.Edges[idx:], n.Edges[idx+1:])
+		n.Edges[len(n.Edges)-1] = edge{}
+		n.Edges = n.Edges[:len(n.Edges)-1]
 	}
 }
 
@@ -172,8 +159,7 @@ func (t *Tree) Len() int {
 	return t.size
 }
 
-// Set is used to add a newentry or update
-// an existing entry. Returns if updated.
+// Set is used to set a value and return the previous one if any.
 func (t *Tree) Set(key string, value interface{}) (interface{}, bool) {
 	var (
 		parent *node
@@ -182,18 +168,19 @@ func (t *Tree) Set(key string, value interface{}) (interface{}, bool) {
 		search = key
 		r      rune
 	)
+
 	for {
 		// Handle key exhaution
 		if len(search) == 0 {
 			if n.isLeafInTheWind() {
-				old := n.leaf.val
-				n.leaf.val = value
+				old := n.Leaf.Value
+				n.Leaf.Value = value
 				return old, true
 			}
 
-			n.leaf = &leafNode{
-				key: key,
-				val: value,
+			n.Leaf = &leafNode{
+				Key:   key,
+				Value: value,
 			}
 			t.size++
 			return t.zero, false
@@ -206,14 +193,15 @@ func (t *Tree) Set(key string, value interface{}) (interface{}, bool) {
 
 		// No edge, create one
 		if n == nil {
+
 			e := edge{
-				label: r,
-				node: &node{
-					leaf: &leafNode{
-						key: key,
-						val: value,
+				Label: r,
+				Node: &node{
+					Leaf: &leafNode{
+						Key:   key,
+						Value: value,
 					},
-					prefix: search,
+					Prefix: search,
 				},
 			}
 			parent.addEdge(e, t.fold)
@@ -222,8 +210,8 @@ func (t *Tree) Set(key string, value interface{}) (interface{}, bool) {
 		}
 
 		// Determine longest prefix of the search key on match
-		commonPrefix := lcp(search, n.prefix)
-		if commonPrefix == len(n.prefix) {
+		commonPrefix := lcp(search, n.Prefix)
+		if commonPrefix == len(n.Prefix) {
 			search = search[commonPrefix:]
 			continue
 		}
@@ -231,36 +219,37 @@ func (t *Tree) Set(key string, value interface{}) (interface{}, bool) {
 		// Split the node
 		t.size++
 		child := &node{
-			prefix: search[:commonPrefix],
+			Prefix: search[:commonPrefix],
 		}
 		parent.updateEdge(r, child, t.fold)
 
 		// Restore the existing node
 		child.addEdge(edge{
-			label: nextRune(n.prefix[commonPrefix:]),
-			node:  n,
+			Label: nextRune(n.Prefix[commonPrefix:]),
+			Node:  n,
 		}, t.fold)
-		n.prefix = n.prefix[commonPrefix:]
+		n.Prefix = n.Prefix[commonPrefix:]
 
 		// Create a new leaf node
 		leaf := &leafNode{
-			key: key,
-			val: value,
+			Key:   key,
+			Value: value,
 		}
 
 		// If the new key is a subset, add to to this node
 		search = search[commonPrefix:]
 		if len(search) == 0 {
-			child.leaf = leaf
+			child.Leaf = leaf
 			return t.zero, false
 		}
+
 		r = nextRune(search)
 		// Create a new edge for the node
 		child.addEdge(edge{
-			label: r,
-			node: &node{
-				leaf:   leaf,
-				prefix: search,
+			Label: r,
+			Node: &node{
+				Leaf:   leaf,
+				Prefix: search,
 			},
 		}, t.fold)
 		return t.zero, false
@@ -296,8 +285,8 @@ func (t *Tree) Delete(s string) (interface{}, bool) {
 		}
 
 		// Consume the search prefix
-		if hp(search, n.prefix) {
-			search = search[len(n.prefix):]
+		if hp(search, n.Prefix) {
+			search = search[len(n.Prefix):]
 		} else {
 			break
 		}
@@ -306,26 +295,26 @@ func (t *Tree) Delete(s string) (interface{}, bool) {
 
 DELETE:
 	// Delete the leaf
-	leaf := n.leaf
-	n.leaf = nil
+	leaf := n.Leaf
+	n.Leaf = nil
 	t.size--
 
 	// Check if we should delete this node from the parent
-	if parent != nil && len(n.edges) == 0 {
+	if parent != nil && len(n.Edges) == 0 {
 		parent.delEdge(label, t.fold)
 	}
 
 	// Check if we should merge this node
-	if n != &t.root && len(n.edges) == 1 {
+	if n != &t.root && len(n.Edges) == 1 {
 		n.mergeChild()
 	}
 
 	// Check if we should merge the parent's other child
-	if parent != nil && parent != &t.root && len(parent.edges) == 1 && !parent.isLeafInTheWind() {
+	if parent != nil && parent != &t.root && len(parent.Edges) == 1 && !parent.isLeafInTheWind() {
 		parent.mergeChild()
 	}
 
-	return leaf.val, true
+	return leaf.Value, true
 }
 
 // DeletePrefix is used to delete the subtree under a prefix
@@ -348,18 +337,18 @@ func (t *Tree) deletePrefix(parent, n *node, prefix string) int {
 			return false
 		})
 		if n.isLeafInTheWind() {
-			n.leaf = nil
+			n.Leaf = nil
 		}
-		n.edges = nil // deletes the entire subtree
+		n.Edges = nil // deletes the entire subtree
 
 		if parent != nil {
-			r := nextRune(n.prefix)
+			r := nextRune(n.Prefix)
 			// delete dangling edge
 			parent.delEdge(r, t.fold)
 		}
 
 		// Check if we should merge the parent's other child
-		if parent != nil && parent != &t.root && len(parent.edges) == 1 && !parent.isLeafInTheWind() {
+		if parent != nil && parent != &t.root && len(parent.Edges) == 1 && !parent.isLeafInTheWind() {
 			parent.mergeChild()
 		}
 		t.size -= subTreeSize
@@ -369,25 +358,25 @@ func (t *Tree) deletePrefix(parent, n *node, prefix string) int {
 	// Look for an edge
 	label := nextRune(prefix)
 	child := n.getEdge(label, t.fold)
-	if child == nil || (!hp(child.prefix, prefix) && !hp(prefix, child.prefix)) {
+	if child == nil || (!hp(child.Prefix, prefix) && !hp(prefix, child.Prefix)) {
 		return 0
 	}
 
 	// Consume the search prefix
-	if len(child.prefix) > len(prefix) {
+	if len(child.Prefix) > len(prefix) {
 		prefix = prefix[len(prefix):]
 	} else {
-		prefix = prefix[len(child.prefix):]
+		prefix = prefix[len(child.Prefix):]
 	}
 	return t.deletePrefix(n, child, prefix)
 }
 
 func (n *node) mergeChild() {
-	e := n.edges[0]
-	child := e.node
-	n.prefix = n.prefix + child.prefix
-	n.leaf = child.leaf
-	n.edges = child.edges
+	e := n.Edges[0]
+	child := e.Node
+	n.Prefix = n.Prefix + child.Prefix
+	n.Leaf = child.Leaf
+	n.Edges = child.Edges
 }
 
 // Get is used to lookup a specific key, returning
@@ -400,7 +389,7 @@ func (t *Tree) Get(s string) (interface{}, bool) {
 		// Check for key exhaution
 		if len(search) == 0 {
 			if n.isLeafInTheWind() {
-				return n.leaf.val, true
+				return n.Leaf.Value, true
 			}
 			break
 		}
@@ -413,8 +402,8 @@ func (t *Tree) Get(s string) (interface{}, bool) {
 		}
 
 		// Consume the search prefix
-		if hp(search, n.prefix) {
-			search = search[len(n.prefix):]
+		if hp(search, n.Prefix) {
+			search = search[len(n.Prefix):]
 		} else {
 			break
 		}
@@ -434,7 +423,7 @@ func (t *Tree) LongestPrefix(s string) (string, interface{}, bool) {
 	for {
 		// Look for a leaf node
 		if n.isLeafInTheWind() {
-			last = n.leaf
+			last = n.Leaf
 		}
 
 		// Check for key exhaution
@@ -450,14 +439,14 @@ func (t *Tree) LongestPrefix(s string) (string, interface{}, bool) {
 		}
 
 		// Consume the search prefix
-		if hp(search, n.prefix) {
-			search = search[len(n.prefix):]
+		if hp(search, n.Prefix) {
+			search = search[len(n.Prefix):]
 		} else {
 			break
 		}
 	}
 	if last != nil {
-		return last.key, last.val, true
+		return last.Key, last.Value, true
 	}
 	return "", t.zero, false
 }
@@ -467,10 +456,10 @@ func (t *Tree) Minimum() (string, interface{}, bool) {
 	n := &t.root
 	for {
 		if n.isLeafInTheWind() {
-			return n.leaf.key, n.leaf.val, true
+			return n.Leaf.Key, n.Leaf.Value, true
 		}
-		if len(n.edges) > 0 {
-			n = n.edges[0].node
+		if len(n.Edges) > 0 {
+			n = n.Edges[0].Node
 		} else {
 			break
 		}
@@ -482,12 +471,12 @@ func (t *Tree) Minimum() (string, interface{}, bool) {
 func (t *Tree) Maximum() (string, interface{}, bool) {
 	n := &t.root
 	for {
-		if num := len(n.edges); num > 0 {
-			n = n.edges[num-1].node
+		if num := len(n.Edges); num > 0 {
+			n = n.Edges[num-1].Node
 			continue
 		}
 		if n.isLeafInTheWind() {
-			return n.leaf.key, n.leaf.val, true
+			return n.Leaf.Key, n.Leaf.Value, true
 		}
 		break
 	}
@@ -518,9 +507,9 @@ func (t *Tree) WalkPrefix(prefix string, fn WalkFn) bool {
 		}
 
 		// Consume the search prefix
-		if hp(search, n.prefix) {
-			search = search[len(n.prefix):]
-		} else if hp(n.prefix, search) {
+		if hp(search, n.Prefix) {
+			search = search[len(n.Prefix):]
+		} else if hp(n.Prefix, search) {
 			// Child may be under our search prefix
 			return recursiveWalk(n, fn)
 		} else {
@@ -559,8 +548,8 @@ func (t *Tree) WalkNearestPath(path string, fn WalkFn) bool {
 		}
 		last = n
 		// Consume the search prefix
-		if hp(search, n.prefix) {
-			search = search[len(n.prefix):]
+		if hp(search, n.Prefix) {
+			search = search[len(n.Prefix):]
 		} else {
 			break
 		}
@@ -583,7 +572,7 @@ func (t *Tree) WalkPath(path string, fn WalkFn) bool {
 	search := path
 	for {
 		// Visit the leaf values if any
-		if n.leaf != nil && fn(n.leaf.key, n.leaf.val) {
+		if n.Leaf != nil && fn(n.Leaf.Key, n.Leaf.Value) {
 			return true
 		}
 
@@ -600,8 +589,8 @@ func (t *Tree) WalkPath(path string, fn WalkFn) bool {
 		}
 
 		// Consume the search prefix
-		if hp(search, n.prefix) {
-			search = search[len(n.prefix):]
+		if hp(search, n.Prefix) {
+			search = search[len(n.Prefix):]
 		} else {
 			break
 		}
@@ -634,14 +623,19 @@ func (t *Tree) ToMap() map[string]interface{} {
 	return out
 }
 
-func (t *Tree) Dump() string {
-	var buf strings.Builder
-	t.DumpTo(&buf)
-	return buf.String()
+func (t *Tree) DumpTo(w io.Writer, asJSON bool) error {
+	if asJSON {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "\t")
+		return enc.Encode(t.root.Edges)
+	}
+	return t.root.dump(w, "")
 }
 
-func (t *Tree) DumpTo(w io.Writer) error {
-	return t.root.dump(w, "")
+func (t *Tree) Dump(asJSON bool) string {
+	var buf strings.Builder
+	t.DumpTo(&buf, asJSON)
+	return buf.String()
 }
 
 // recursiveWalk is used to do a pre-order walk of a node
@@ -651,13 +645,13 @@ func recursiveWalk(n *node, fn WalkFn) bool {
 		return false
 	}
 	// Visit the leaf values if any
-	if n.leaf != nil && fn(n.leaf.key, n.leaf.val) {
+	if n.Leaf != nil && fn(n.Leaf.Key, n.Leaf.Value) {
 		return true
 	}
 
 	// Recurse on the children
-	for _, e := range n.edges {
-		if recursiveWalk(e.node, fn) {
+	for _, e := range n.Edges {
+		if recursiveWalk(e.Node, fn) {
 			return true
 		}
 	}
