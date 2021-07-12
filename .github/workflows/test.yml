@@ -4,6 +4,7 @@ on:
       - ".github/**"
       - "*.md"
       - "*.sh"
+      - go.mod
       - LICENSE
     branches:
       - main
