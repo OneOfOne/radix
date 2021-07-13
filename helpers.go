@@ -76,6 +76,10 @@ func longestPrefixFold(k1, k2 string) (i int) {
 	return i
 }
 
+func strEq(k1, k2 string) bool {
+	return len(k1) == len(k2) && longestPrefixFold(k1, k2) == len(k1)
+}
+
 func hasPrefixFold(s, pre string) (_ bool) {
 	if len(s) < len(pre) {
 		return
@@ -121,13 +125,9 @@ func asciiLower(r byte) byte {
 	return r
 }
 
+var lowerMap = map[rune]rune{}
+
 func toLower(r rune) rune {
-	if r < utf8.RuneSelf {
-		if 'A' <= r && r <= 'Z' {
-			r += 'a' - 'A'
-		}
-		return r
-	}
 	return unicode.ToLower(r)
 }
 

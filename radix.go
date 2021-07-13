@@ -78,10 +78,12 @@ func (n *node[VT]) addEdge(e edge[VT], fold bool) {
 	if fold {
 		e.Label = toLower(e.Label)
 	}
+
 	num := len(n.Edges)
 	idx := sort.Search(num, func(i int) bool {
 		return n.Edges[i].Label >= e.Label
 	})
+
 	n.Edges = append(n.Edges, edge[VT]{})
 	copy(n.Edges[idx+1:], n.Edges[idx:])
 	n.Edges[idx] = e
@@ -91,14 +93,21 @@ func (n *node[VT]) updateEdge(label rune, node *node[VT], fold bool) {
 	if fold {
 		label = toLower(label)
 	}
-	num := len(n.Edges)
-	idx := sort.Search(num, func(i int) bool {
-		return n.Edges[i].Label >= label
-	})
-	if idx < num && n.Edges[idx].Label == label {
-		n.Edges[idx].Node = node
-		return
+
+	i, j := 0, len(n.Edges)
+	for i < j {
+		h := int(uint(i+j) >> 1)
+		e := &n.Edges[h]
+		if e.Label == label {
+			e.Node = node
+			return
+		} else if e.Label < label {
+			i = h + 1
+		} else {
+			j = h
+		}
 	}
+
 	panic("replacing missing edge")
 }
 
@@ -106,13 +115,20 @@ func (n *node[VT]) getEdge(label rune, fold bool) *node[VT] {
 	if fold {
 		label = toLower(label)
 	}
-	num := len(n.Edges)
-	idx := sort.Search(num, func(i int) bool {
-		return n.Edges[i].Label >= label
-	})
-	if idx < num && n.Edges[idx].Label == label {
-		return n.Edges[idx].Node
+
+	i, j := 0, len(n.Edges)
+	for i < j {
+		h := int(uint(i+j) >> 1)
+		e := n.Edges[h]
+		if e.Label == label {
+			return e.Node
+		} else if e.Label < label {
+			i = h + 1
+		} else {
+			j = h
+		}
 	}
+
 	return nil
 }
 
