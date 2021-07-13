@@ -113,6 +113,7 @@ func (n *node) getEdge(label rune, fold bool) *node {
 	if fold {
 		label = toLower(label)
 	}
+
 	i, j := 0, len(n.Edges)
 	for i < j {
 		h := int(uint(i+j) >> 1)
@@ -125,6 +126,7 @@ func (n *node) getEdge(label rune, fold bool) *node {
 			j = h
 		}
 	}
+
 	return nil
 }
 

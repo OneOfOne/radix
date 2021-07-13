@@ -6,6 +6,7 @@ package radix
 import (
 	"fmt"
 	"testing"
+	"unicode/utf8"
 )
 
 var sink int
@@ -13,16 +14,39 @@ var sink int
 func BenchmarkHasPrefix(b *testing.B) {
 	k1 := "/api/v1/user/çç"
 	k2 := "/api/v1/useR/x"
-	b.Log(k1[:longestPrefix(k1, k2)])
-	b.Log(k1[:longestPrefixFold(k1, k2)])
+	b.Log(k1[:LongestPrefix(k1, k2)])
+	b.Log(k1[:LongestPrefixFold(k1, k2)])
 	b.Run("fold", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			sink += longestPrefixFold(k2, k1)
+			sink += LongestPrefixFold(k2, k1)
 		}
 	})
 	b.Run("no-fold", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			sink += longestPrefix(k2, k1)
+			sink += LongestPrefix(k2, k1)
+		}
+	})
+}
+
+func BenchmarkNextRune(b *testing.B) {
+	k1 := "/u/äpfêl/"
+	b.Run("for-loop", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, r := range k1 {
+				sink = int(r)
+			}
+		}
+	})
+	b.Run("decode", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var r rune
+			var sz int
+			k1 := k1
+			for k1 != "" {
+				r, sz = utf8.DecodeRuneInString(k1)
+				k1 = k1[sz:]
+				sink = int(r)
+			}
 		}
 	})
 }

@@ -19,20 +19,20 @@ func hasPrefixFn(fold bool) func(s, pre string) bool {
 		return strings.HasPrefix
 	}
 
-	return hasPrefixFold
+	return HasPrefixFold
 }
 
 func longestPrefixFn(fold bool) func(a, b string) int {
 	if !fold {
-		return longestPrefix
+		return LongestPrefix
 	}
 
-	return longestPrefixFold
+	return LongestPrefixFold
 }
 
-// longestPrefix finds the length of the shared prefix
+// LongestPrefix finds the length of the shared prefix
 // of two strings
-func longestPrefix(k1, k2 string) (i int) {
+func LongestPrefix(k1, k2 string) (i int) {
 	max := len(k1)
 	if l := len(k2); l < max {
 		max = l
@@ -47,9 +47,9 @@ func longestPrefix(k1, k2 string) (i int) {
 	return
 }
 
-// longestPrefixFold finds the length of the shared prefix
+// LongestPrefixFold finds the length of the shared prefix
 // of two strings, ignoring case.
-func longestPrefixFold(k1, k2 string) (i int) {
+func LongestPrefixFold(k1, k2 string) (i int) {
 	if len(k1) > len(k2) {
 		k1, k2 = k2, k1
 	}
@@ -76,11 +76,24 @@ func longestPrefixFold(k1, k2 string) (i int) {
 	return i
 }
 
-func strEq(k1, k2 string) bool {
-	return len(k1) == len(k2) && longestPrefixFold(k1, k2) == len(k1)
+// StringsEqualFold is a simplified version of strings.EqualFold,
+// returns true if strings are equal, ignoring case.
+func StringsEqualFold(k1, k2 string) bool {
+	return len(k1) == len(k2) && LongestPrefixFold(k1, k2) == len(k1)
 }
 
-func hasPrefixFold(s, pre string) (_ bool) {
+// StringCountByte is an optimized version of strings.Count for a single byte
+func StringCountByte(s string, b byte) (n int) {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			n++
+		}
+	}
+	return
+}
+
+// HasPrefixFold is a case-insenstive version of strings.HasPrefix.
+func HasPrefixFold(s, pre string) (_ bool) {
 	if len(s) < len(pre) {
 		return
 	}
@@ -124,8 +137,6 @@ func asciiLower(r byte) byte {
 	}
 	return r
 }
-
-var lowerMap = map[rune]rune{}
 
 func toLower(r rune) rune {
 	return unicode.ToLower(r)

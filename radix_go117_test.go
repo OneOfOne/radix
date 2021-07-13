@@ -31,8 +31,8 @@ func ExampleRadix() {
 func TestRadix(t *testing.T) {
 	a := "aaabbbbccccdddd"
 	b := "aaabbbbccD"
-	t.Log(a[:longestPrefixFold(a, b)])
-	t.Log(a[:longestPrefix(a, b)])
+	t.Log(a[:LongestPrefixFold(a, b)])
+	t.Log(a[:LongestPrefix(a, b)])
 	var min, max string
 	inp := make(map[string]interface{})
 	for i := 0; i < 1000; i++ {
