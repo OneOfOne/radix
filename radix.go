@@ -20,8 +20,8 @@ type WalkFn[VT any] func(s string, v VT) bool
 
 // edge is used to represent an edge node
 type edge[VT any] struct {
-	Label rune      `json:"label"`
 	Node  *node[VT] `json:"node,omitempty"`
+	Label rune      `json:"label"`
 }
 
 // leafNode is used to represent a value
@@ -31,16 +31,16 @@ type leafNode[VT any] struct {
 }
 
 type node[VT any] struct {
-	// Edges should be stored in-order for iteration.
-	// We avoid a fully materialized slice to save memory,
-	// since in most cases we expect to be sparse
-	Edges []edge[VT] `json:"edges,omitempty"`
-
 	// Leaf is used to store possible Leaf
 	Leaf *leafNode[VT] `json:"leaf,omitempty"`
 
 	// Prefix is the common Prefix we ignore
 	Prefix string `json:"prefix,omitempty"`
+
+	// Edges should be stored in-order for iteration.
+	// We avoid a fully materialized slice to save memory,
+	// since in most cases we expect to be sparse
+	Edges []edge[VT] `json:"edges,omitempty"`
 }
 
 func (n *node[VT]) dump(w io.Writer, indent string) (err error) {
