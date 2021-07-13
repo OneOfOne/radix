@@ -93,7 +93,7 @@ func hasPrefixFold(s, pre string) (_ bool) {
 			continue
 		}
 
-		pr, sz = utf8.DecodeLastRuneInString(pre[i:])
+		pr, sz = utf8.DecodeRuneInString(pre[i:])
 		if sr, _ = utf8.DecodeRuneInString(s[i:]); !runeEq(pr, sr) {
 			return
 		}
