@@ -66,7 +66,7 @@ func longestPrefixFold(k1, k2 string) (i int) {
 			continue
 		}
 
-		r1, sz = utf8.DecodeLastRuneInString(k1[i:])
+		r1, sz = utf8.DecodeRuneInString(k1[i:])
 		if r2, _ = utf8.DecodeRuneInString(k2[i:]); !runeEq(r1, r2) {
 			return
 		}

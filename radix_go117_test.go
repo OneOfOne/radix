@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -294,7 +295,7 @@ func TestWalkPrefix(t *testing.T) {
 }
 
 func TestWalkPath(t *testing.T) {
-	r := New(false)
+	r := New(true)
 
 	keys := []string{
 		"foo",
@@ -303,6 +304,7 @@ func TestWalkPath(t *testing.T) {
 		"foo/baz/bar",
 		"foo/zip/zap",
 		"zipzap",
+		"/u/äpfêl/",
 	}
 	for _, k := range keys {
 		r.Set(k, nil)
@@ -312,42 +314,54 @@ func TestWalkPath(t *testing.T) {
 	}
 
 	type exp struct {
-		inp string
-		out []string
+		in      string
+		out     []string
+		nearest bool
 	}
 	cases := []exp{
 		{
 			"f",
-			[]string{},
+			nil,
+			false,
 		},
 		{
 			"foo",
 			[]string{"foo"},
+			false,
 		},
 		{
 			"foo/",
 			[]string{"foo"},
+			false,
 		},
 		{
 			"foo/ba",
 			[]string{"foo"},
+			false,
 		},
 		{
 			"foo/bar",
 			[]string{"foo", "foo/bar"},
+			false,
 		},
 		{
 			"foo/bar/baz",
 			[]string{"foo", "foo/bar", "foo/bar/baz"},
+			false,
 		},
 		{
 			"foo/bar/bazoo",
 			[]string{"foo", "foo/bar", "foo/bar/baz"},
+			false,
 		},
 		{
 			"z",
-			[]string{},
+			nil,
+			false,
 		},
+		{"/", []string{"/u/äpfêl/"}, true},
+		{"/u/aPFÊL/", []string{"/u/äpfêl/"}, true},
+		{"/u/ÄPFÊL/", []string{"/u/äpfêl/"}, true},
 	}
 
 	for _, test := range cases {
@@ -356,52 +370,26 @@ func TestWalkPath(t *testing.T) {
 			out = append(out, s)
 			return false
 		}
-		r.WalkPath(test.inp, fn)
+		if test.nearest {
+			r.WalkNearestPath(test.in, fn)
+		} else {
+			r.WalkPath(test.in, fn)
+		}
 		sort.Strings(out)
 		sort.Strings(test.out)
 		if !reflect.DeepEqual(out, test.out) {
-			t.Fatalf("mis-match: %v %v", out, test.out)
+			if len(test.out) != len(out) {
+				// t.Log(r.Dump(true))
+				t.Errorf("mismatch(%s): expected %v, got %v", test.in, test.out, out)
+			}
+			for i, s0 := range test.out {
+				s1 := out[i]
+				if !strings.EqualFold(s0, s1) {
+					t.Fatalf("mismatch(%s): %+v %v %s (expected: %v, got %v)", test.in, test, out, s0, []rune(s0), []rune(s1))
+				}
+			}
 		}
 	}
-}
-
-func TestRouter(t *testing.T) {
-	r := New(true)
-	routes := []string{
-		"/test",
-		"/api/v1/user/:id",
-		"/api/v1/user/x",
-		"/api/v1/user/x",
-		"/api/v1/user/x",
-		"/api/v1/user/:id/:type",
-		"/api/v1/campaign/:id",
-		"/api/v1/users",
-		"/api/v1/health/:id/:type",
-		"/*notfound",
-	}
-
-	for _, route := range routes {
-		r.Set(route, route)
-	}
-
-	t.Log(r.LongestPrefix("/api/v1/user"))
-	r.WalkNearestPath("/api/v1/user/1000", func(k string, v interface{}) bool {
-		t.Log(k, v)
-		return false
-	})
-
-	r = New(false)
-	r.Set("/api/x😀y/1", "0")
-	r.Set("/api/x😀z/3", "1")
-	r.Set("/api/x😄y/2", "2")
-	r.Set("/api/x/z", "3")
-
-	r.DeletePrefix("/api/x😀y")
-	r.Walk(func(k string, v interface{}) bool {
-		t.Log(k)
-		return false
-	})
-	t.Log(r.Dump(true))
 }
 
 // generateUUID is used to generate a random UUID

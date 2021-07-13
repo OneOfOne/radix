@@ -1,12 +1,11 @@
-radix
+# radix
 [![Go Reference](https://pkg.go.dev/badge/go.oneofone.dev/radix.svg)](https://pkg.go.dev/go.oneofone.dev/radix)
 ![test status](https://github.com/OneOfOne/radix/actions/workflows/test.yml/badge.svg)
 [![Coverall](https://coveralls.io/repos/github/OneOfOne/radix/badge.svg?branch=main)](https://coveralls.io/github/OneOfOne/radix)
-=========
 
-`radix` implements a [radix tree](http://en.wikipedia.org/wiki/Radix_tree), optimized for sparse nodes.
+Implements a [radix tree](http://en.wikipedia.org/wiki/Radix_tree), optimized for sparse nodes.
 
-This is a hard-fork based on [armon/go-radix](https://github.com/armon/go-radix), with some additions.
+This is a hard-fork based of [armon/go-radix](https://github.com/armon/go-radix), with some additions.
 
 # Features
 
