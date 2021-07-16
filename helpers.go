@@ -1,18 +1,11 @@
 package radix
 
 import (
+	"math"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
-
-func firstChar(s string) rune {
-	if s[0] < utf8.RuneSelf {
-		return rune(s[0])
-	}
-	r, _ := utf8.DecodeRuneInString(s)
-	return r
-}
 
 func hasPrefixFn(fold bool) func(s, pre string) bool {
 	if !fold {
@@ -55,25 +48,22 @@ func LongestPrefixFold(k1, k2 string) (i int) {
 	}
 
 	var r1, r2 rune
-	var sz int
 
-	for i < len(k1) {
-		if k1[i] < utf8.RuneSelf {
-			if !asciiEq(k1[i], k2[i]) {
+	for i, r1 = range k1 {
+		_ = k2[i]
+		if r1 < utf8.RuneSelf {
+			if !asciiEq(byte(r1), k2[i]) {
 				return
 			}
-			i++
 			continue
 		}
 
-		r1, sz = utf8.DecodeRuneInString(k1[i:])
 		if r2, _ = utf8.DecodeRuneInString(k2[i:]); !runeEq(r1, r2) {
 			return
 		}
-		i += sz
 	}
 
-	return i
+	return len(k1)
 }
 
 // StringsEqualFold is a simplified version of strings.EqualFold,
@@ -99,22 +89,20 @@ func HasPrefixFold(s, pre string) (_ bool) {
 	}
 
 	var pr, sr rune
-	var i, sz int
+	var i int
 
-	for i < len(pre) {
-		if pre[i] < utf8.RuneSelf {
-			if !asciiEq(pre[i], s[i]) {
+	for i, pr = range pre {
+		_ = s[i]
+		if pr < utf8.RuneSelf {
+			if !asciiEq(byte(pr), s[i]) {
 				return
 			}
-			i++
 			continue
 		}
 
-		pr, sz = utf8.DecodeRuneInString(pre[i:])
 		if sr, _ = utf8.DecodeRuneInString(s[i:]); !runeEq(pr, sr) {
 			return
 		}
-		i += sz
 	}
 
 	return true
@@ -124,11 +112,18 @@ func runeEq(sr, tr rune) bool {
 	if sr == tr {
 		return true
 	}
-	return toLower(sr) == toLower(tr)
+	return unicode.To(unicode.LowerCase, sr) == unicode.To(unicode.LowerCase, tr)
 }
 
+var asciiTable = func() (t [math.MaxUint8 + 1]byte) {
+	for i := 0; i < len(t); i++ {
+		t[i] = asciiLower(byte(i))
+	}
+	return
+}()
+
 func asciiEq(sr, tr byte) bool {
-	return sr == tr || asciiLower(sr) == asciiLower(tr)
+	return asciiTable[sr] == asciiTable[tr]
 }
 
 func asciiLower(r byte) byte {
@@ -136,10 +131,6 @@ func asciiLower(r byte) byte {
 		r += 'a' - 'A'
 	}
 	return r
-}
-
-func toLower(r rune) rune {
-	return unicode.ToLower(r)
 }
 
 func nextRune(s string) rune {

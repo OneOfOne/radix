@@ -11,6 +11,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 // WalkFn is used when walking the tree. Takes a
@@ -76,7 +77,7 @@ func (n *node[VT]) isLeafInTheWind() bool {
 
 func (n *node[VT]) addEdge(e edge[VT], fold bool) {
 	if fold {
-		e.Label = toLower(e.Label)
+		e.Label = unicode.ToLower(e.Label)
 	}
 
 	num := len(n.Edges)
@@ -91,7 +92,7 @@ func (n *node[VT]) addEdge(e edge[VT], fold bool) {
 
 func (n *node[VT]) updateEdge(label rune, node *node[VT], fold bool) {
 	if fold {
-		label = toLower(label)
+		label = unicode.ToLower(label)
 	}
 
 	i, j := 0, len(n.Edges)
@@ -113,7 +114,7 @@ func (n *node[VT]) updateEdge(label rune, node *node[VT], fold bool) {
 
 func (n *node[VT]) getEdge(label rune, fold bool) *node[VT] {
 	if fold {
-		label = toLower(label)
+		label = unicode.ToLower(label)
 	}
 
 	i, j := 0, len(n.Edges)
@@ -134,7 +135,7 @@ func (n *node[VT]) getEdge(label rune, fold bool) *node[VT] {
 
 func (n *node[VT]) delEdge(label rune, fold bool) {
 	if fold {
-		label = toLower(label)
+		label = unicode.ToLower(label)
 	}
 	num := len(n.Edges)
 	idx := sort.Search(num, func(i int) bool {

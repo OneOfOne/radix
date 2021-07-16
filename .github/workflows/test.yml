@@ -33,15 +33,15 @@ jobs:
       shell: bash -l {0}
       run: go test
 
-    - name: Run Tests (1.18)
+    - name: Run Tests (dev.typeparams)
       shell: bash -l {0}
       run: |
         go install golang.org/dl/gotip@master
         gotip download dev.typeparams
         gotip env -w GOEXPERIMENT=unified
         gotip version
-        sed -e 's@1\.14@1.18@g' -i go.mod
-        gotip test -covermode=atomic -coverprofile=profile.cov ./...
+        sed -e 's@1\.1.@1.18@g' -i go.mod
+        gotip test -bench="." -covermode=atomic -coverprofile=profile.cov ./...
 
     - name: Coverage
       uses: shogo82148/actions-goveralls@v1

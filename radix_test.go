@@ -379,8 +379,8 @@ func TestWalkPath(t *testing.T) {
 		sort.Strings(test.out)
 		if !reflect.DeepEqual(out, test.out) {
 			if len(test.out) != len(out) {
-				// t.Log(r.Dump(true))
-				t.Errorf("mismatch(%s): expected %v, got %v", test.in, test.out, out)
+				t.Log(r.Dump(true))
+				t.Fatalf("mismatch(%s): expected %v, got %v", test.in, test.out, out)
 			}
 			for i, s0 := range test.out {
 				s1 := out[i]
